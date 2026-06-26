@@ -5,21 +5,25 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from .forms import FormularioBusquedaProspectos, FormularioPlantillaMensaje, FormularioCampania
-from .models import Prospecto, BusquedaProspectos, PlantillaMensaje, Campania
+from .models import Prospecto, BusquedaProspectos, PlantillaMensaje, Campania, RegistroContacto
 from .services.search_runner import EjecutorBusqueda
 from .services.whatsapp import GeneradorLinkWhatsapp
+from .templatetags.prospeccion_ui import RUBROS
+
+ESTADOS_RAPIDOS = ['new','review','contacted','replied','interested','won','lost','discarded','do_not_contact']
 
 def metricas_dashboard():
-    return [
-        ('Prospectos totales', Prospecto.objects.count(), 'Base comercial acumulada'),
-        ('Sin web detectada', Prospecto.objects.filter(tiene_web=False).count(), 'Oportunidad digital principal'),
-        ('Con teléfono', Prospecto.objects.filter(tiene_telefono=True).count(), 'Listos para contacto manual'),
-        ('Nuevos', Prospecto.objects.filter(estado_comercial='new').count(), 'Sin gestionar'),
-        ('Contactados', Prospecto.objects.filter(estado_comercial='contacted').count(), 'Primer toque realizado'),
-        ('Respondieron', Prospecto.objects.filter(estado_comercial='replied').count(), 'Conversación abierta'),
-        ('Interesados', Prospecto.objects.filter(estado_comercial='interested').count(), 'Alta intención'),
-        ('Campañas activas', Campania.objects.filter(estado='active').count(), 'En ejecución comercial'),
-    ]
+    return [('Prospectos totales', Prospecto.objects.count(), 'Base comercial'),('Sin web detectada', Prospecto.objects.filter(tiene_web=False).count(), 'Oportunidad'),('Con teléfono', Prospecto.objects.filter(tiene_telefono=True).count(), 'Contactables'),('Nuevos', Prospecto.objects.filter(estado_comercial='new').count(), 'Por revisar'),('Contactados', Prospecto.objects.filter(estado_comercial='contacted').count(), 'Primer toque'),('Respondieron', Prospecto.objects.filter(estado_comercial='replied').count(), 'Conversación'),('Interesados', Prospecto.objects.filter(estado_comercial='interested').count(), 'Alta intención'),('Campañas activas', Campania.objects.filter(estado='active').count(), 'En marcha')]
+
+def aplicar_busqueda_global(qs, texto):
+    if not texto: return qs
+    estados={v.lower():k for k,v in Prospecto.ESTADOS_COMERCIALES}
+    filtro=Q(nombre__icontains=texto)|Q(rubro__icontains=texto)|Q(zona__icontains=texto)|Q(ciudad__icontains=texto)|Q(campanias__nombre__icontains=texto)|Q(campanias__rubro__icontains=texto)|Q(campanias__zona__icontains=texto)
+    estado=estados.get(texto.lower())
+    rubros_tecnicos=[clave for clave, etiqueta in RUBROS.items() if texto.lower() in etiqueta.lower()]
+    if rubros_tecnicos: filtro |= Q(rubro__in=rubros_tecnicos) | Q(campanias__rubro__in=rubros_tecnicos)
+    if estado: filtro |= Q(estado_comercial=estado)
+    return qs.filter(filtro).distinct()
 
 def dashboard(request):
     contexto={'metricas':metricas_dashboard(),'busquedas':BusquedaProspectos.objects.order_by('-creado_el')[:6],'oportunidades':Prospecto.objects.exclude(estado_comercial='do_not_contact').order_by('-puntaje_total')[:8],'duplicados':Prospecto.objects.filter(es_posible_duplicado=True)[:6],'no_contactar':Prospecto.objects.filter(estado_comercial='do_not_contact')[:6]}
@@ -36,18 +40,16 @@ def nueva_busqueda(request):
             threading.Thread(target=EjecutorBusqueda().ejecutar,args=(busqueda.pk,),daemon=True).start()
             messages.success(request,'Búsqueda enviada al motor de prospección. Podés seguir el progreso en el historial.')
             return redirect('prospeccion:busquedas')
-    else:
-        formulario=FormularioBusquedaProspectos(initial={'radio_metros':3000,'max_resultados':60,'modo_busqueda':'balanced'})
+    else: formulario=FormularioBusquedaProspectos(initial={'radio_metros':3000,'max_resultados':60,'modo_busqueda':'balanced'})
     return render(request,'prospeccion/nueva_busqueda.html',{'formulario':formulario})
 
 @require_POST
 def cancelar_busqueda(request, pk):
-    BusquedaProspectos.objects.filter(pk=pk,estado__in=['queued','running']).update(estado='cancelled')
-    messages.info(request,'Búsqueda cancelada.')
+    BusquedaProspectos.objects.filter(pk=pk,estado__in=['queued','running']).update(estado='cancelled'); messages.info(request,'Búsqueda cancelada.')
     return redirect('prospeccion:busquedas')
 
 def explorador(request):
-    prospectos=Prospecto.objects.all().select_related('busqueda_origen')
+    q=request.GET.get('q','').strip(); prospectos=aplicar_busqueda_global(Prospecto.objects.all().select_related('busqueda_origen').prefetch_related('campanias'), q)
     if request.GET.get('sin_web'): prospectos=prospectos.filter(tiene_web=False)
     if request.GET.get('con_telefono'): prospectos=prospectos.filter(tiene_telefono=True)
     if request.GET.get('alta_prioridad'): prospectos=prospectos.filter(puntaje_total__gte=75)
@@ -56,16 +58,19 @@ def explorador(request):
     if request.GET.get('rubro'): prospectos=prospectos.filter(rubro__icontains=request.GET['rubro'])
     if request.GET.get('zona'): prospectos=prospectos.filter(Q(ciudad__icontains=request.GET['zona'])|Q(zona__icontains=request.GET['zona']))
     if request.GET.get('puntaje'): prospectos=prospectos.filter(puntaje_total__gte=request.GET['puntaje'])
-    return render(request,'prospeccion/explorador.html',{'prospectos':prospectos.order_by('-puntaje_total')[:200],'estados':Prospecto.ESTADOS_COMERCIALES})
+    return render(request,'prospeccion/explorador.html',{'prospectos':prospectos.order_by('-puntaje_total')[:200],'estados':Prospecto.ESTADOS_COMERCIALES,'q':q})
 
 def drawer_prospecto(request, pk):
-    return render(request,'prospeccion/partials/drawer_prospecto.html',{'prospecto':get_object_or_404(Prospecto,pk=pk),'plantillas':PlantillaMensaje.objects.filter(activa=True)})
+    return render(request,'prospeccion/partials/drawer_prospecto.html',{'prospecto':get_object_or_404(Prospecto,pk=pk),'plantillas':PlantillaMensaje.objects.filter(activa=True),'estados':Prospecto.ESTADOS_COMERCIALES})
 
 @require_POST
 def cambiar_estado(request, pk, estado):
-    Prospecto.objects.filter(pk=pk).update(estado_comercial=estado)
-    messages.success(request,'Estado comercial actualizado.')
-    return redirect(request.META.get('HTTP_REFERER') or reverse('prospeccion:explorador'))
+    prospecto=get_object_or_404(Prospecto,pk=pk)
+    etiquetas=dict(Prospecto.ESTADOS_COMERCIALES)
+    anterior=prospecto.get_estado_comercial_display(); prospecto.estado_comercial=estado; prospecto.save(update_fields=['estado_comercial','actualizado_el'])
+    RegistroContacto.objects.create(prospecto=prospecto,canal='otro',direccion='saliente',estado='borrador',cuerpo_mensaje=f'Estado cambiado de {anterior} a {etiquetas.get(estado, estado)}')
+    messages.success(request,f'Estado actualizado a {etiquetas.get(estado, estado)}.')
+    return redirect(request.META.get('HTTP_REFERER') or reverse('prospeccion:pipeline'))
 
 @require_POST
 def accion_whatsapp(request, pk):
@@ -82,22 +87,30 @@ def accion_whatsapp(request, pk):
         messages.error(request,str(exc)); return redirect(request.META.get('HTTP_REFERER') or reverse('prospeccion:explorador'))
 
 def pipeline(request):
-    columnas=[(clave,etiqueta,Prospecto.objects.filter(estado_comercial=clave).order_by('-puntaje_total')[:50]) for clave,etiqueta in Prospecto.ESTADOS_COMERCIALES if clave!='do_not_contact']
+    columnas=[(clave,etiqueta,Prospecto.objects.filter(estado_comercial=clave).order_by('-puntaje_total')[:50],Prospecto.objects.filter(estado_comercial=clave).count()) for clave,etiqueta in Prospecto.ESTADOS_COMERCIALES if clave!='do_not_contact']
     return render(request,'prospeccion/pipeline.html',{'columnas':columnas})
 
 def plantillas(request):
     formulario=FormularioPlantillaMensaje(request.POST or None)
-    if request.method=='POST' and formulario.is_valid():
-        formulario.save(); messages.success(request,'Plantilla creada.'); return redirect('prospeccion:plantillas')
+    if request.method=='POST' and formulario.is_valid(): formulario.save(); messages.success(request,'Plantilla creada.'); return redirect('prospeccion:plantillas')
     return render(request,'prospeccion/plantillas.html',{'formulario':formulario,'plantillas':PlantillaMensaje.objects.order_by('-creado_el')})
 
+@require_POST
+def desactivar_plantilla(request, pk):
+    PlantillaMensaje.objects.filter(pk=pk).update(activa=False); messages.success(request,'Plantilla desactivada.'); return redirect('prospeccion:plantillas')
+
 def campanias(request):
-    formulario=FormularioCampania(request.POST or None)
+    formulario=FormularioCampania(request.POST or None); criterio=''
     if request.method=='POST' and formulario.is_valid():
-        campania=formulario.save();
-        candidatos=Prospecto.objects.exclude(estado_comercial='do_not_contact')
-        if campania.rubro: candidatos=candidatos.filter(rubro__icontains=campania.rubro)
-        if campania.zona: candidatos=candidatos.filter(Q(zona__icontains=campania.zona)|Q(ciudad__icontains=campania.zona))
-        campania.prospectos.add(*candidatos[:50]); messages.success(request,'Campaña creada y prospectos sugeridos asociados.'); return redirect('prospeccion:campanias')
-    campanias_qs=Campania.objects.annotate(total=Count('prospectos')).order_by('-creado_el')
+        campania=formulario.save(); candidatos=Prospecto.objects.exclude(estado_comercial='do_not_contact')
+        partes=[]
+        if campania.rubro: candidatos=candidatos.filter(rubro__icontains=campania.rubro); partes.append(f'rubro similar a {campania.rubro}')
+        if campania.zona: candidatos=candidatos.filter(Q(zona__icontains=campania.zona)|Q(ciudad__icontains=campania.zona)); partes.append(f'zona {campania.zona}')
+        campania.prospectos.add(*candidatos[:50]); criterio=', '.join(partes) or 'prospectos disponibles excluyendo No contactar'
+        messages.success(request,f'Campaña creada. Se asociaron prospectos sugeridos por criterio: {criterio}.'); return redirect('prospeccion:campanias')
+    campanias_qs=Campania.objects.annotate(total=Count('prospectos'),contactados=Count('prospectos',filter=Q(prospectos__estado_comercial='contacted')),respondieron=Count('prospectos',filter=Q(prospectos__estado_comercial='replied')),interesados=Count('prospectos',filter=Q(prospectos__estado_comercial='interested')),ganados=Count('prospectos',filter=Q(prospectos__estado_comercial='won'))).order_by('-creado_el')
     return render(request,'prospeccion/campanias.html',{'formulario':formulario,'campanias':campanias_qs})
+
+@require_POST
+def alternar_campania(request, pk):
+    campania=get_object_or_404(Campania,pk=pk); campania.estado='paused' if campania.estado=='active' else 'active'; campania.save(update_fields=['estado','actualizado_el']); messages.success(request,'Estado de campaña actualizado.'); return redirect('prospeccion:campanias')
