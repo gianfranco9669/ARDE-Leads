@@ -1,0 +1,52 @@
+{% extends 'prospeccion/base.html' %}
+{% load prospeccion_ui %}
+{% block content %}
+<div class="arde-page-head">
+  <div>
+    <span class="eyebrow">▦ CRM visual</span>
+    <h1 class="page-title">Pipeline comercial</h1>
+    <p class="page-copy">Gestioná oportunidades por etapa con cards compactas, acciones claras y lectura rápida del avance comercial.</p>
+  </div>
+</div>
+
+<div class="kanban-board refined-kanban">
+  {% for clave, etiqueta, items, total in columnas %}
+    <section class="kanban-col surface">
+      <header class="kanban-head">
+        <div>
+          <h2>{{ etiqueta }}</h2>
+          <p>{% if total %}{{ total }} oportunidad{{ total|pluralize:'es' }}{% else %}Columna lista para recibir prospectos{% endif %}</p>
+        </div>
+        <span class="badge badge-slate">{{ total }}</span>
+      </header>
+
+      <div class="kanban-stack">
+        {% for p in items %}
+          <article class="kanban-card card" hx-get="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-target="#drawer" hx-swap="innerHTML" tabindex="0">
+            <div class="kanban-card-top">
+              <div>
+                <b>{{ p.nombre }}</b>
+                <p>{{ p.rubro|rubro_legible }} · {{ p.zona|default:p.ciudad|default:'Zona sin definir' }}</p>
+              </div>
+              <span class="score-chip">{{ p.puntaje_total }}</span>
+            </div>
+            <div class="kanban-card-meta">
+              {% if not p.tiene_web %}<span class="badge badge-red">Sin web</span>{% endif %}
+              {% if p.tiene_telefono %}<span class="badge badge-green">Con teléfono</span>{% endif %}
+            </div>
+            <div class="kanban-actions">
+              <a class="btn btn-secondary" hx-get="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-target="#drawer" hx-swap="innerHTML">Ver detalle</a>
+              <form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'contacted' %}">{% csrf_token %}<button class="action-pill">Marcar contactado</button></form>
+              <form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'interested' %}">{% csrf_token %}<button class="action-pill">Interesado</button></form>
+              <form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'do_not_contact' %}" onsubmit="return confirm('¿Marcar como No contactar?');">{% csrf_token %}<button class="action-pill danger">No contactar</button></form>
+            </div>
+          </article>
+        {% empty %}
+          <div class="empty kanban-empty">Sin prospectos en {{ etiqueta }}.<br><span>Cuando cambies estados, aparecerán acá.</span></div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+</div>
+<div id="drawer"></div>
+{% endblock %}

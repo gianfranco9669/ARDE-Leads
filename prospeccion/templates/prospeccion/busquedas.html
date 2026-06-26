@@ -1,0 +1,56 @@
+{% extends 'prospeccion/base.html' %}
+{% block content %}
+<div class="arde-page-head">
+  <div>
+    <span class="eyebrow">◷ Auditoría comercial</span>
+    <h1 class="page-title">Historial de búsquedas</h1>
+    <p class="page-copy">Monitoreá cada corrida de Google Places con métricas operativas, requests, duplicados y errores sin tablas administrativas.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Nueva búsqueda</a>
+</div>
+
+<section class="search-timeline">
+  {% for b in busquedas %}
+    <article class="search-run-card">
+      <div class="search-run-head">
+        <div>
+          <span class="eyebrow">{{ b.get_estado_display }}</span>
+          <h2>{{ b.consulta }}</h2>
+          <p>{{ b.ciudad|default:'Ciudad sin definir' }} · {{ b.zona|default:'Zona amplia' }} · {{ b.get_modo_busqueda_display }}</p>
+        </div>
+        <div class="progress-orb" style="--progress:{{ b.progreso }}"><span>{{ b.progreso }}%</span></div>
+      </div>
+
+      <div class="run-progress"><span style="width:{{ b.progreso }}%"></span></div>
+
+      <div class="run-metrics">
+        <div><b>{{ b.resultados_encontrados }}</b><span>resultados</span></div>
+        <div><b>{{ b.prospectos_creados }}</b><span>creados</span></div>
+        <div><b>{{ b.prospectos_actualizados }}</b><span>actualizados</span></div>
+        <div><b>{{ b.duplicados_detectados }}</b><span>duplicados</span></div>
+        <div><b>{{ b.solicitudes_reales }}/{{ b.solicitudes_estimadas }}</b><span>requests</span></div>
+      </div>
+
+      {% if b.mensaje_error %}
+        <div class="run-error"><b>Error de API:</b> {{ b.mensaje_error }}</div>
+      {% endif %}
+
+      <div class="run-actions">
+        <a class="btn btn-primary" href="{% url 'prospeccion:explorador' %}?q={{ b.consulta|urlencode }}">Ver prospectos</a>
+        {% if b.estado == 'queued' or b.estado == 'running' %}
+          <form method="post" action="{% url 'prospeccion:cancelar_busqueda' b.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-danger">Cancelar</button>
+          </form>
+        {% endif %}
+      </div>
+    </article>
+  {% empty %}
+    <div class="empty empty-premium">
+      <b>Todavía no hay búsquedas.</b>
+      <p>Creá una corrida de prospección para empezar a detectar negocios sin web y oportunidades calientes.</p>
+      <a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Iniciar prospección</a>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

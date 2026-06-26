@@ -1,0 +1,64 @@
+{% extends 'prospeccion/base.html' %}
+{% load prospeccion_ui %}
+{% block content %}
+<div class="arde-page-head">
+  <div>
+    <span class="eyebrow">✎ Mensajes manuales</span>
+    <h1 class="page-title">Plantillas</h1>
+    <p class="page-copy">Diseñá mensajes reutilizables con variables seguras, preview tipo WhatsApp y uso 100% manual.</p>
+  </div>
+</div>
+
+<div class="template-studio" x-data="{mensaje:'', invalida:false, insertar(v){const t=this.$refs.cuerpo; const i=t.selectionStart; t.value=t.value.slice(0,i)+v+t.value.slice(i); this.mensaje=t.value; this.validar(); t.focus();}, validar(){this.invalida=/\{(?!nombre\}|rubro\}|zona\}|direccion\}|servicio_ofrecido\})[^}]+\}/.test(this.mensaje)}}">
+  <form method="post" class="surface template-editor">
+    {% csrf_token %}
+    <span class="eyebrow">Editor ARDE</span>
+    <h2>Crear plantilla</h2>
+    <p class="module-copy">Usá variables para personalizar rápido sin automatizar envíos.</p>
+    <div class="form-grid two"><label class="form-group"><span>Nombre</span>{{ formulario.nombre }}</label><label class="form-group"><span>Rubro objetivo</span>{{ formulario.rubro_objetivo }}</label></div>
+    <label class="form-group"><span>Tipo de oferta</span>{{ formulario.tipo_oferta }}</label>
+    <label class="form-group"><span>Mensaje</span><textarea x-ref="cuerpo" @input="mensaje=$event.target.value; validar()" class="field" name="cuerpo" rows="6" placeholder="Hola {nombre}, vi una oportunidad en {zona}..."></textarea></label>
+    <div class="variable-chips">
+      <button type="button" @click="insertar('{nombre}')">{nombre}</button>
+      <button type="button" @click="insertar('{rubro}')">{rubro}</button>
+      <button type="button" @click="insertar('{zona}')">{zona}</button>
+      <button type="button" @click="insertar('{direccion}')">{direccion}</button>
+      <button type="button" @click="insertar('{servicio_ofrecido}')">{servicio_ofrecido}</button>
+    </div>
+    <label class="filter-toggle"><span>Plantilla activa</span>{{ formulario.activa }}</label>
+    <p x-show="invalida" class="validation-note">Hay una variable no soportada. Usá solo los chips disponibles.</p>
+    <button class="btn btn-primary w-full">Crear plantilla</button>
+  </form>
+
+  <aside class="whatsapp-preview surface">
+    <div class="phone-shell">
+      <div class="phone-head"><span></span><b>WhatsApp manual</b></div>
+      <div class="message-bubble" x-text="mensaje || 'Escribí un mensaje para ver la vista previa…'"></div>
+      <small>Vista previa únicamente. ARDE no envía mensajes automáticamente.</small>
+    </div>
+  </aside>
+
+  <section class="template-list">
+    {% for p in plantillas %}
+      <article class="template-card card">
+        <div class="template-card-head">
+          <div>
+            <b>{{ p.nombre }}</b>
+            <p>{{ p.rubro_objetivo|rubro_legible }} · {{ p.tipo_oferta|default:'Oferta general' }}</p>
+          </div>
+          {% if p.activa %}<span class="badge badge-green">Activa</span>{% else %}<span class="badge badge-slate">Inactiva</span>{% endif %}
+        </div>
+        <div class="template-body">{{ p.cuerpo }}</div>
+        <div class="template-actions">
+          <span class="btn btn-ghost opacity-60" aria-disabled="true">Editar próximamente</span>
+          {% if p.activa %}
+            <form method="post" action="{% url 'prospeccion:desactivar_plantilla' p.pk %}">{% csrf_token %}<button class="btn btn-danger">Desactivar</button></form>
+          {% endif %}
+        </div>
+      </article>
+    {% empty %}
+      <div class="empty empty-premium">Creá la primera plantilla para acelerar contactos manuales con mensajes consistentes.</div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}
