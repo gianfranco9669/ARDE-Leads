@@ -1,1 +1,46 @@
-{% load static prospeccion_ui %}<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ARDE Leads · Prospección</title><script src="https://cdn.tailwindcss.com"></script><script src="https://unpkg.com/htmx.org@1.9.12"></script><script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script><link rel="stylesheet" href="{% static 'prospeccion/css/arde-ui.css' %}"></head><body class="arde-body"><div class="arde-orb"></div><div class="arde-shell"><aside class="arde-sidebar"><div class="arde-brand"><div class="arde-mark">A</div><div><div class="text-sm font-black tracking-wide">ARDE Leads</div><div class="text-[11px] text-orange-100/80">Prospección comercial</div></div></div><nav class="arde-nav"><a href="{% url 'prospeccion:dashboard' %}"><span class="ico">◆</span>Centro de control</a><a href="{% url 'prospeccion:nueva_busqueda' %}"><span class="ico">＋</span>Nueva búsqueda</a><a href="{% url 'prospeccion:busquedas' %}"><span class="ico">◷</span>Historial</a><a href="{% url 'prospeccion:explorador' %}"><span class="ico">⌕</span>Explorador</a><a href="{% url 'prospeccion:pipeline' %}"><span class="ico">▦</span>Pipeline</a><a href="{% url 'prospeccion:campanias' %}"><span class="ico">◎</span>Campañas</a><a href="{% url 'prospeccion:plantillas' %}"><span class="ico">✎</span>Plantillas</a></nav><div class="arde-note"><b>Contacto responsable.</b><br>Copiá o abrí WhatsApp manualmente. Sin envíos masivos automáticos.</div></aside><main class="arde-main"><header class="arde-topbar"><form method="get" action="{% url 'prospeccion:explorador' %}" class="arde-search"><span class="text-slate-500">⌕</span><input name="q" value="{{ request.GET.q }}" placeholder="Buscar prospectos, rubros, zonas, estados o campañas…"><button class="btn btn-secondary" type="submit">Buscar</button>{% if request.GET.q %}<a class="btn btn-ghost" href="{% url 'prospeccion:explorador' %}">Limpiar</a>{% endif %}</form><a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Prospectar</a></header><section class="arde-content">{% for message in messages %}<div class="toast mb-3">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</section></main></div></body></html>
+{% load static prospeccion_ui %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ARDE Leads · Prospección</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="{% static 'prospeccion/css/arde-ui.css' %}">
+</head>
+<body class="arde-body">
+<div class="arde-orb"></div>
+<div class="arde-shell">
+  <aside class="arde-sidebar">
+    <div class="arde-brand"><div class="arde-mark">A</div><div><div class="text-sm font-black tracking-wide">ARDE Leads</div><div class="text-[11px] text-orange-100/80">Prospección comercial</div></div></div>
+    {% with active=request.resolver_match.url_name %}
+    <nav class="arde-nav">
+      <a class="{% if active == 'dashboard' %}is-active{% endif %}" href="{% url 'prospeccion:dashboard' %}"><span class="ico">◆</span>Centro de control</a>
+      <a class="{% if active == 'nueva_busqueda' or active == 'nueva_busqueda_es' %}is-active{% endif %}" href="{% url 'prospeccion:nueva_busqueda' %}"><span class="ico">＋</span>Nueva búsqueda</a>
+      <a class="{% if active == 'busquedas' or active == 'busquedas_es' %}is-active{% endif %}" href="{% url 'prospeccion:busquedas' %}"><span class="ico">◷</span>Historial</a>
+      <a class="{% if active == 'explorador' or active == 'explorador_es' %}is-active{% endif %}" href="{% url 'prospeccion:explorador' %}"><span class="ico">⌕</span>Explorador</a>
+      <a class="{% if active == 'pipeline' %}is-active{% endif %}" href="{% url 'prospeccion:pipeline' %}"><span class="ico">▦</span>Pipeline</a>
+      <a class="{% if active == 'campanias' or active == 'campanias_es' %}is-active{% endif %}" href="{% url 'prospeccion:campanias' %}"><span class="ico">◎</span>Campañas</a>
+      <a class="{% if active == 'plantillas' or active == 'plantillas_es' %}is-active{% endif %}" href="{% url 'prospeccion:plantillas' %}"><span class="ico">✎</span>Plantillas</a>
+    </nav>
+    {% endwith %}
+    <div class="arde-note"><b>Contacto responsable.</b><br>Copiá o abrí WhatsApp manualmente. Sin envíos masivos automáticos.</div>
+  </aside>
+  <main class="arde-main">
+    <header class="arde-topbar">
+      <form method="get" action="{% url 'prospeccion:explorador' %}" class="arde-search">
+        <span class="text-slate-500">⌕</span>
+        <input name="q" value="{{ request.GET.q }}" placeholder="Buscar prospectos, rubros, zonas, estados o campañas…">
+        {% if request.GET.q %}<span class="search-chip">“{{ request.GET.q }}”</span>{% endif %}
+        <button class="btn btn-secondary" type="submit">Buscar</button>
+        {% if request.GET.q %}<a class="btn btn-ghost" href="{% url 'prospeccion:explorador' %}">Limpiar</a>{% endif %}
+      </form>
+      <a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Prospectar</a>
+    </header>
+    <section class="arde-content">{% for message in messages %}<div class="toast mb-3">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</section>
+  </main>
+</div>
+</body>
+</html>

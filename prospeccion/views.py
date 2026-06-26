@@ -13,7 +13,18 @@ from .templatetags.prospeccion_ui import RUBROS
 ESTADOS_RAPIDOS = ['new','review','contacted','replied','interested','won','lost','discarded','do_not_contact']
 
 def metricas_dashboard():
-    return [('Prospectos totales', Prospecto.objects.count(), 'Base comercial'),('Sin web detectada', Prospecto.objects.filter(tiene_web=False).count(), 'Oportunidad'),('Con teléfono', Prospecto.objects.filter(tiene_telefono=True).count(), 'Contactables'),('Nuevos', Prospecto.objects.filter(estado_comercial='new').count(), 'Por revisar'),('Contactados', Prospecto.objects.filter(estado_comercial='contacted').count(), 'Primer toque'),('Respondieron', Prospecto.objects.filter(estado_comercial='replied').count(), 'Conversación'),('Interesados', Prospecto.objects.filter(estado_comercial='interested').count(), 'Alta intención'),('Campañas activas', Campania.objects.filter(estado='active').count(), 'En marcha')]
+    explorador_url = reverse('prospeccion:explorador')
+    campanias_url = reverse('prospeccion:campanias')
+    return [
+        {'titulo':'Prospectos totales','valor':Prospecto.objects.count(),'ayuda':'Base comercial','url':explorador_url,'icono':'◎','tono':'slate','microcopy':'Ver prospectos'},
+        {'titulo':'Sin web detectada','valor':Prospecto.objects.filter(tiene_web=False).count(),'ayuda':'Oportunidad digital','url':f'{explorador_url}?sin_web=1','icono':'⚡','tono':'hot','microcopy':'Abrir segmento'},
+        {'titulo':'Con teléfono','valor':Prospecto.objects.filter(tiene_telefono=True).count(),'ayuda':'Listos para contacto','url':f'{explorador_url}?con_telefono=1','icono':'☎','tono':'green','microcopy':'Ver contactables'},
+        {'titulo':'Nuevos','valor':Prospecto.objects.filter(estado_comercial='new').count(),'ayuda':'Sin gestionar','url':f'{explorador_url}?estado=new','icono':'✦','tono':'blue','microcopy':'Revisar nuevos'},
+        {'titulo':'Contactados','valor':Prospecto.objects.filter(estado_comercial='contacted').count(),'ayuda':'Primer toque','url':f'{explorador_url}?estado=contacted','icono':'↗','tono':'blue','microcopy':'Ver seguimiento'},
+        {'titulo':'Respondieron','valor':Prospecto.objects.filter(estado_comercial='replied').count(),'ayuda':'Conversación abierta','url':f'{explorador_url}?estado=replied','icono':'✉','tono':'green','microcopy':'Ver respuestas'},
+        {'titulo':'Interesados','valor':Prospecto.objects.filter(estado_comercial='interested').count(),'ayuda':'Alta intención','url':f'{explorador_url}?estado=interested','icono':'★','tono':'hot','microcopy':'Priorizar ahora'},
+        {'titulo':'Campañas activas','valor':Campania.objects.filter(estado='active').count(),'ayuda':'En marcha','url':campanias_url,'icono':'◉','tono':'orange','microcopy':'Abrir campañas'},
+    ]
 
 def aplicar_busqueda_global(qs, texto):
     if not texto: return qs

@@ -22,6 +22,16 @@ class ProspeccionFlujosTests(TestCase):
     def test_dashboard(self):
         r=self.client.get(reverse('prospeccion:dashboard'))
         self.assertEqual(r.status_code,200); self.assertContains(r,'Detectá oportunidades calientes antes que nadie')
+
+    def test_dashboard_links_accionables(self):
+        r=self.client.get(reverse('prospeccion:dashboard'))
+        self.assertContains(r, reverse('prospeccion:explorador') + '?sin_web=1')
+        self.assertContains(r, reverse('prospeccion:explorador') + '?con_telefono=1')
+        self.assertContains(r, reverse('prospeccion:explorador') + '?estado=new')
+        self.assertContains(r, reverse('prospeccion:campanias'))
+        self.assertContains(r, 'Ver detalle')
+        self.assertContains(r, '?duplicados=1')
+        self.assertContains(r, '?estado=do_not_contact')
     def test_explorador_y_filtros(self):
         r=self.client.get(reverse('prospeccion:explorador'), {'sin_web':'1','con_telefono':'1','q':'Barbería'})
         self.assertEqual(r.status_code,200); self.assertContains(r,'Barbería Norte'); self.assertNotContains(r,'barber_shop')
