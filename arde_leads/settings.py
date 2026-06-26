@@ -20,3 +20,4 @@ STATIC_URL='static/'; STATICFILES_DIRS=[BASE_DIR/'static'] if (BASE_DIR/'static'
 DEFAULT_AUTO_FIELD='django.db.models.BigAutoField'
 GOOGLE_PLACES_API_KEY=os.getenv('GOOGLE_PLACES_API_KEY','')
 GOOGLE_PLACES_DEFAULT_FIELD_MASK=os.getenv('GOOGLE_PLACES_FIELD_MASK','places.id,places.displayName,places.formattedAddress,places.shortFormattedAddress,places.location,places.nationalPhoneNumber,places.internationalPhoneNumber,places.websiteUri,places.googleMapsUri,places.rating,places.userRatingCount,places.primaryType,places.types,places.businessStatus')
+TEST_RUNNER = 'prospeccion.test_runner.ProspeccionDiscoverRunner'

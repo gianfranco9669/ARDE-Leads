@@ -55,6 +55,22 @@ class ProspeccionFlujosTests(TestCase):
     def test_pipeline(self):
         r=self.client.get(reverse('prospeccion:pipeline'))
         self.assertEqual(r.status_code,200); self.assertContains(r,'Ver detalle'); self.assertContains(r,'No contactar')
+
+    def test_explorador_renderiza_acciones_visibles(self):
+        r=self.client.get(reverse('prospeccion:explorador'))
+        self.assertContains(r,'Ver detalle')
+        self.assertContains(r,'Marcar contactado')
+        self.assertContains(r,'Interesado')
+        self.assertContains(r,'No contactar')
+        self.assertContains(r,'Descartar')
+    def test_acciones_estado_desde_explorador(self):
+        for estado in ['contacted','interested','do_not_contact','discarded']:
+            prospecto=Prospecto.objects.create(place_id=f'accion-{estado}',nombre=f'Prospecto {estado}',rubro='store',ciudad='Lomas')
+            r=self.client.post(reverse('prospeccion:cambiar_estado', args=[prospecto.pk,estado]), HTTP_REFERER=reverse('prospeccion:explorador'), follow=True)
+            self.assertEqual(r.status_code,200)
+            prospecto.refresh_from_db()
+            self.assertEqual(prospecto.estado_comercial,estado)
+            self.assertTrue(RegistroContacto.objects.filter(prospecto=prospecto, cuerpo_mensaje__icontains='Estado cambiado').exists())
     def test_normalizador_puntaje_dedupe_y_validacion(self):
         tel=NormalizadorTelefono().normalizar('011 15 2222-3333')
         self.assertTrue(tel['normalizado'].startswith('+549'))
