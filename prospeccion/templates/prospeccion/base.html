@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ARDE Leads · Prospección</title>
+  <script src="https://cdn.tailwindcss.com"></script><script src="https://unpkg.com/htmx.org@1.9.12"></script><script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>.glass{background:linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.12);box-shadow:0 24px 80px rgba(0,0,0,.35)}.chip{border:1px solid rgba(251,146,60,.35);background:rgba(249,115,22,.12);color:#fed7aa;border-radius:999px;padding:.45rem .8rem;font-size:.82rem}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:.25rem .6rem;font-size:.75rem;font-weight:700}.input-premium{width:100%;border-radius:1rem;border:1px solid rgba(255,255,255,.12);background:rgba(2,6,23,.72);padding:.75rem 1rem;color:#f8fafc;outline:none}</style>
+</head>
+<body class="bg-[#070a12] text-slate-100 antialiased">
+<div class="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(249,115,22,.22),transparent_34%),radial-gradient(circle_at_80%_10%,rgba(239,68,68,.13),transparent_28%)]"></div>
+<div class="relative min-h-screen flex">
+  <aside class="hidden lg:flex w-72 shrink-0 flex-col border-r border-white/10 bg-slate-950/80 backdrop-blur-xl p-5">
+    <div class="rounded-3xl bg-gradient-to-br from-orange-500 to-red-600 p-5 shadow-2xl shadow-orange-900/30"><div class="text-3xl font-black tracking-tight">ARDE</div><div class="text-sm font-semibold text-orange-50">Leads · Prospección local</div></div>
+    <nav class="mt-8 space-y-2 text-sm font-semibold">
+      <a class="block rounded-2xl px-4 py-3 hover:bg-white/10" href="{% url 'prospeccion:dashboard' %}">Centro de control</a>
+      <a class="block rounded-2xl px-4 py-3 hover:bg-white/10" href="{% url 'prospeccion:nueva_busqueda' %}">Nueva búsqueda</a>
+      <a class="block rounded-2xl px-4 py-3 hover:bg-white/10" href="{% url 'prospeccion:busquedas' %}">Historial de búsquedas</a>
+      <a class="block rounded-2xl px-4 py-3 hover:bg-white/10" href="{% url 'prospeccion:explorador' %}">Explorador de prospectos</a>
+      <a class="block rounded-2xl px-4 py-3 hover:bg-white/10" href="{% url 'prospeccion:pipeline' %}">Pipeline comercial</a>
+      <a class="block rounded-2xl px-4 py-3 hover:bg-white/10" href="{% url 'prospeccion:campanias' %}">Campañas</a>
+      <a class="block rounded-2xl px-4 py-3 hover:bg-white/10" href="{% url 'prospeccion:plantillas' %}">Plantillas</a>
+    </nav>
+    <div class="mt-auto rounded-3xl border border-orange-400/20 bg-orange-500/10 p-4 text-sm text-orange-100">Sin envío masivo automático. ARDE registra aperturas y copias para contacto manual responsable.</div>
+  </aside>
+  <main class="flex-1">
+    <header class="sticky top-0 z-20 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl px-5 py-4"><div class="flex items-center gap-4"><input class="input-premium" placeholder="Buscar prospectos, rubros, zonas o campañas…"><a class="rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 px-5 py-3 font-black shadow-lg shadow-orange-950/40" href="{% url 'prospeccion:nueva_busqueda' %}">Prospectar ahora</a></div></header>
+    <section class="p-5 lg:p-8">{% for message in messages %}<div class="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-emerald-100">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</section>
+  </main>
+</div>
+</body></html>
