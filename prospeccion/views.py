@@ -104,7 +104,7 @@ def campanias(request):
     if request.method=='POST' and formulario.is_valid():
         campania=formulario.save(); candidatos=Prospecto.objects.exclude(estado_comercial='do_not_contact')
         partes=[]
-        if campania.rubro: candidatos=candidatos.filter(rubro__icontains=campania.rubro); partes.append(f'rubro similar a {campania.rubro}')
+        if campania.rubro: candidatos=candidatos.filter(rubro__icontains=campania.rubro); partes.append(f"rubro similar a {RUBROS.get(campania.rubro, campania.rubro.replace('_',' ').capitalize())}")
         if campania.zona: candidatos=candidatos.filter(Q(zona__icontains=campania.zona)|Q(ciudad__icontains=campania.zona)); partes.append(f'zona {campania.zona}')
         campania.prospectos.add(*candidatos[:50]); criterio=', '.join(partes) or 'prospectos disponibles excluyendo No contactar'
         messages.success(request,f'Campaña creada. Se asociaron prospectos sugeridos por criterio: {criterio}.'); return redirect('prospeccion:campanias')

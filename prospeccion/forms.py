@@ -1,7 +1,7 @@
 from django import forms
 from .models import BusquedaProspectos, PlantillaMensaje, Campania
 
-CLASE_INPUT = 'w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/30 outline-none transition'
+CLASE_INPUT = 'field'
 
 class FormularioPremium(forms.ModelForm):
     def __init__(self,*args,**kwargs):
