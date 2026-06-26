@@ -1,0 +1,52 @@
+{% extends 'prospeccion/base.html' %}
+{% load prospeccion_ui %}
+{% block content %}
+<section class="dashboard-hero surface-premium">
+  <div>
+    <span class="eyebrow">🔥 Centro ejecutivo</span>
+    <h1 class="page-title">Detectá oportunidades calientes antes que nadie.</h1>
+    <p class="page-copy">Un radar comercial para encontrar negocios sin web detectada, priorizar contactos y mover oportunidades por el pipeline.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Iniciar prospección</a>
+</section>
+<section class="kpi-grid">
+  {% for metrica in metricas %}
+  <a class="kpi-card tone-{{ metrica.tono }}" href="{{ metrica.url }}" aria-label="{{ metrica.titulo }}">
+    <span class="kpi-icon">{{ metrica.icono }}</span>
+    <span class="kpi-label">{{ metrica.titulo }}</span>
+    <strong class="kpi-value">{{ metrica.valor }}</strong>
+    <span class="kpi-help">{{ metrica.ayuda }}</span>
+    <span class="kpi-link">{{ metrica.microcopy }} →</span>
+  </a>
+  {% endfor %}
+</section>
+<div class="dashboard-grid">
+  <section class="surface surface-premium p-4">
+    <div class="section-title"><h2>Mejores oportunidades</h2><span class="badge badge-orange">Radar de prioridad</span></div>
+    {% for p in oportunidades %}
+    <button type="button" class="opportunity-card w-full text-left" hx-get="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-target="#drawer" hx-swap="innerHTML">
+      <span><b>{{ p.nombre }}</b><p>{{ p.rubro|rubro_legible }} · {{ p.zona|default:p.ciudad }}</p></span>
+      <span class="flex items-center gap-2"><span class="score-ring" style="--score:{{ p.puntaje_total }}"><span>{{ p.puntaje_total }}</span></span>{% if not p.tiene_web %}<span class="badge badge-red">Sin web</span>{% endif %}<span class="btn btn-secondary">Ver detalle</span></span>
+    </button>
+    {% empty %}<div class="empty">Cargá datos demo o iniciá una búsqueda para ver oportunidades priorizadas.</div>{% endfor %}
+  </section>
+  <aside class="space-y-4">
+    <section class="surface p-4">
+      <div class="section-title"><h2>Últimas búsquedas</h2><a class="btn btn-ghost" href="{% url 'prospeccion:busquedas' %}">Ver historial</a></div>
+      {% for b in busquedas %}
+      <a class="search-card" href="{% url 'prospeccion:explorador' %}?q={{ b.consulta|urlencode }}">
+        <span><b>{{ b.consulta }}</b><small>{{ b.get_estado_display }} · {{ b.resultados_encontrados }} resultados</small></span>
+        <span class="badge badge-blue">{{ b.prospectos_creados }} creados</span>
+        <span class="search-metrics">{{ b.prospectos_actualizados }} act. · {{ b.duplicados_detectados }} dup. · {{ b.solicitudes_reales }} req.</span>
+      </a>
+      {% empty %}<div class="empty">Sin búsquedas todavía.<div class="mt-3"><a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Iniciar prospección</a></div></div>{% endfor %}
+    </section>
+    <section class="surface p-4">
+      <div class="section-title"><h2>Alertas</h2><span class="badge badge-yellow">Revisión</span></div>
+      <a class="alert-card" href="{% url 'prospeccion:explorador' %}?duplicados=1">Duplicados posibles <b>{{ duplicados|length }}</b></a>
+      <a class="alert-card danger" href="{% url 'prospeccion:explorador' %}?estado=do_not_contact">No contactar <b>{{ no_contactar|length }}</b></a>
+    </section>
+  </aside>
+</div>
+<div id="drawer"></div>
+{% endblock %}
