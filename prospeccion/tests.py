@@ -59,7 +59,7 @@ class ProspeccionFlujosTests(TestCase):
     def test_explorador_renderiza_acciones_visibles(self):
         r=self.client.get(reverse('prospeccion:explorador'))
         self.assertContains(r,'Ver detalle')
-        self.assertContains(r,'Marcar contactado')
+        self.assertContains(r,'Marcar como contactado')
         self.assertContains(r,'Marcar como interesado')
         self.assertContains(r,'No contactar')
         self.assertContains(r,'Descartar')
