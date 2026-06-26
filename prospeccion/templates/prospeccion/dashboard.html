@@ -24,10 +24,10 @@
   <section class="surface surface-premium p-4">
     <div class="section-title"><h2>Mejores oportunidades</h2><span class="badge badge-orange">Radar de prioridad</span></div>
     {% for p in oportunidades %}
-    <article class="opportunity-card" hx-get="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-target="#drawer" hx-swap="innerHTML" tabindex="0">
-      <div><b>{{ p.nombre }}</b><p>{{ p.rubro|rubro_legible }} · {{ p.zona|default:p.ciudad }}</p></div>
-      <div class="flex items-center gap-2"><div class="score-ring" style="--score:{{ p.puntaje_total }}"><span>{{ p.puntaje_total }}</span></div>{% if not p.tiene_web %}<span class="badge badge-red">Sin web</span>{% endif %}<button class="btn btn-secondary">Ver detalle</button></div>
-    </article>
+    <button type="button" class="opportunity-card w-full text-left" hx-get="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-target="#drawer" hx-swap="innerHTML">
+      <span><b>{{ p.nombre }}</b><p>{{ p.rubro|rubro_legible }} · {{ p.zona|default:p.ciudad }}</p></span>
+      <span class="flex items-center gap-2"><span class="score-ring" style="--score:{{ p.puntaje_total }}"><span>{{ p.puntaje_total }}</span></span>{% if not p.tiene_web %}<span class="badge badge-red">Sin web</span>{% endif %}<span class="btn btn-secondary">Ver detalle</span></span>
+    </button>
     {% empty %}<div class="empty">Cargá datos demo o iniciá una búsqueda para ver oportunidades priorizadas.</div>{% endfor %}
   </section>
   <aside class="space-y-4">

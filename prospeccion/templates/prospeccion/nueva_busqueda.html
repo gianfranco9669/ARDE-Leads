@@ -1,1 +1,76 @@
-{% extends 'prospeccion/base.html' %}{% block content %}<div class="arde-page-head"><div><span class="eyebrow">＋ Wizard</span><h1 class="page-title">Nueva búsqueda de prospectos</h1><p class="page-copy">Confirmá rubro, zona y costo estimado antes de consultar Google Places con FieldMask optimizado.</p></div></div><form method="post" x-data="{paso:1}" class="surface mx-auto max-w-4xl p-5">{% csrf_token %}<div class="mb-5 grid grid-cols-3 gap-2"><template x-for="n in 3"><div class="h-1.5 rounded-full" :class="paso>=n?'bg-orange-500':'bg-slate-800'"></div></template></div><section x-show="paso==1"><h2 class="font-black">1. Rubro objetivo</h2><p class="mb-3 text-sm text-slate-400">Usá un acceso rápido o escribí un rubro personalizado.</p><div class="mb-4 flex flex-wrap gap-2"><button type="button" @click="document.querySelector('[name=consulta]').value='barbería'" class="eyebrow">Barberías</button><button type="button" @click="document.querySelector('[name=consulta]').value='taller mecánico'" class="eyebrow">Talleres</button><button type="button" @click="document.querySelector('[name=consulta]').value='odontólogo'" class="eyebrow">Odontólogos</button><button type="button" @click="document.querySelector('[name=consulta]').value='gimnasio'" class="eyebrow">Gimnasios</button><button type="button" @click="document.querySelector('[name=consulta]').value='restaurante'" class="eyebrow">Restaurantes</button><button type="button" @click="document.querySelector('[name=consulta]').value='inmobiliaria'" class="eyebrow">Inmobiliarias</button></div><label class="text-xs text-slate-400">Rubro o búsqueda{{ formulario.consulta }}</label></section><section x-show="paso==2"><h2 class="font-black">2. Zona</h2><p class="mb-3 text-sm text-slate-400">Definí ciudad, zona comercial y radio de cobertura.</p><div class="grid md:grid-cols-2 gap-3">{{ formulario.ciudad }}{{ formulario.zona }}</div><div class="mt-3 grid md:grid-cols-3 gap-3">{{ formulario.latitud }}{{ formulario.longitud }}{{ formulario.radio_metros }}</div><div class="mt-3">{{ formulario.modo_busqueda }}</div></section><section x-show="paso==3"><h2 class="font-black">3. Revisión y costo estimado</h2><div class="my-3 surface-subtle p-3 text-sm text-orange-100"><b>Uso responsable de API.</b> ARDE usa FieldMask para pedir solo campos necesarios y mostrar métricas de ejecución.</div>{{ formulario.campos_solicitados }}<div class="mt-3">{{ formulario.max_resultados }}</div></section><div class="mt-5 flex justify-between"><button type="button" @click="paso=Math.max(1,paso-1)" class="btn btn-secondary">Atrás</button><button type="button" x-show="paso<3" @click="paso++" class="btn btn-primary">Continuar</button><button x-show="paso==3" class="btn btn-primary">Iniciar búsqueda</button></div></form>{% endblock %}
+{% extends 'prospeccion/base.html' %}
+{% block content %}
+<div class="arde-page-head">
+  <div>
+    <span class="eyebrow">＋ Motor de prospección</span>
+    <h1 class="page-title">Nueva búsqueda de prospectos</h1>
+    <p class="page-copy">Configurá rubro, zona y alcance antes de consultar Google Places con FieldMask optimizado y control de costo.</p>
+  </div>
+</div>
+
+<form method="post" x-data="{paso:1, modo:'balanced', max:60, rubro:''}" class="wizard-shell">
+  {% csrf_token %}
+  <section class="wizard-card">
+    <div class="wizard-steps">
+      <button type="button" @click="paso=1" :class="paso===1 ? 'is-active' : ''"><b>1</b><span>Rubro objetivo</span></button>
+      <button type="button" @click="paso=2" :class="paso===2 ? 'is-active' : ''"><b>2</b><span>Zona y alcance</span></button>
+      <button type="button" @click="paso=3" :class="paso===3 ? 'is-active' : ''"><b>3</b><span>Revisión</span></button>
+    </div>
+
+    <div x-show="paso===1" class="wizard-panel">
+      <span class="eyebrow">Paso 1</span>
+      <h2>Elegí el rubro comercial</h2>
+      <p>Usá chips rápidos para prospectar rubros frecuentes o escribí una búsqueda personalizada.</p>
+      <div class="chip-grid">
+        <button type="button" @click="document.querySelector('[name=consulta]').value='barbería'; rubro='Barberías'">Barberías</button>
+        <button type="button" @click="document.querySelector('[name=consulta]').value='taller mecánico'; rubro='Talleres'">Talleres</button>
+        <button type="button" @click="document.querySelector('[name=consulta]').value='odontólogo'; rubro='Odontólogos'">Odontólogos</button>
+        <button type="button" @click="document.querySelector('[name=consulta]').value='gimnasio'; rubro='Gimnasios'">Gimnasios</button>
+        <button type="button" @click="document.querySelector('[name=consulta]').value='restaurante'; rubro='Restaurantes'">Restaurantes</button>
+        <button type="button" @click="document.querySelector('[name=consulta]').value='inmobiliaria'; rubro='Inmobiliarias'">Inmobiliarias</button>
+      </div>
+      <label class="form-group"><span>Rubro o búsqueda</span>{{ formulario.consulta }}</label>
+    </div>
+
+    <div x-show="paso===2" class="wizard-panel">
+      <span class="eyebrow">Paso 2</span>
+      <h2>Delimitá la zona caliente</h2>
+      <p>Combiná ciudad, zona comercial y radio. Latitud/longitud son opcionales para búsquedas cercanas precisas.</p>
+      <div class="form-grid two"><label class="form-group"><span>Ciudad</span>{{ formulario.ciudad }}</label><label class="form-group"><span>Zona comercial</span>{{ formulario.zona }}</label></div>
+      <div class="form-grid three"><label class="form-group"><span>Latitud</span>{{ formulario.latitud }}</label><label class="form-group"><span>Longitud</span>{{ formulario.longitud }}</label><label class="form-group"><span>Radio</span>{{ formulario.radio_metros }}</label></div>
+      <label class="form-group"><span>Modo de búsqueda</span>{{ formulario.modo_busqueda }}</label>
+      <div class="mode-grid">
+        <div><b>Rápida</b><span>Menos requests, ideal para tanteo.</span></div>
+        <div class="is-featured"><b>Equilibrada</b><span>Balance entre cobertura y costo.</span></div>
+        <div><b>Profunda</b><span>Mayor cobertura para campañas críticas.</span></div>
+      </div>
+    </div>
+
+    <div x-show="paso===3" class="wizard-panel">
+      <span class="eyebrow">Paso 3</span>
+      <h2>Revisión y costo estimado</h2>
+      <p>ARDE no dispara consultas sin confirmación. El FieldMask permite pedir solo datos útiles para vender.</p>
+      <div class="cost-panel"><b>Estimación visual</b><span>Hasta <strong x-text="Math.ceil((Number(max)||60)/20)"></strong> requests para <strong x-text="max || 60"></strong> resultados.</span></div>
+      <label class="form-group"><span>FieldMask personalizado</span>{{ formulario.campos_solicitados }}</label>
+      <label class="form-group"><span>Límite de resultados</span><input class="field" type="number" name="max_resultados" x-model="max" value="{{ formulario.max_resultados.value|default:60 }}"></label>
+    </div>
+
+    <div class="wizard-actions">
+      <button type="button" @click="paso=Math.max(1,paso-1)" class="btn btn-secondary">Atrás</button>
+      <button type="button" x-show="paso<3" @click="paso++" class="btn btn-primary">Continuar</button>
+      <button x-show="paso===3" class="btn btn-primary">Iniciar búsqueda</button>
+    </div>
+  </section>
+
+  <aside class="wizard-summary">
+    <span class="eyebrow">Resumen vivo</span>
+    <h3>Prospección controlada</h3>
+    <p>Validá la intención comercial antes de consumir API. No se envía ningún mensaje automático.</p>
+    <div class="summary-row"><span>Rubro</span><b x-text="rubro || 'A definir'"></b></div>
+    <div class="summary-row"><span>Modo sugerido</span><b>Equilibrada</b></div>
+    <div class="summary-row"><span>Contacto</span><b>Manual responsable</b></div>
+    <div class="arde-divider"></div>
+    <p class="module-copy">Tip: para zonas densas usá radios de 1500 a 3500 metros y revisá duplicados antes de contactar.</p>
+  </aside>
+</form>
+{% endblock %}

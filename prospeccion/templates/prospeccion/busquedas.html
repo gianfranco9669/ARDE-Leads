@@ -1,1 +1,56 @@
-{% extends 'prospeccion/base.html' %}{% block content %}<div class="arde-page-head"><div><span class="eyebrow">◷ Auditoría</span><h1 class="page-title">Historial de búsquedas</h1><p class="page-copy">Seguimiento de requests, resultados, prospectos creados, actualizados y errores de Google Places.</p></div><a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Nueva búsqueda</a></div><div class="surface overflow-hidden"><table class="w-full min-w-[900px]"><thead class="bg-slate-950/45 text-left text-[11px] uppercase tracking-wide text-slate-500"><tr><th class="p-3">Búsqueda</th><th>Estado</th><th>Progreso</th><th>Resultados</th><th>Creados</th><th>Actualizados</th><th>Duplicados</th><th>Requests</th><th>Acciones</th></tr></thead><tbody>{% for b in busquedas %}<tr class="border-t border-white/10 hover:bg-white/[.035]"><td class="p-3"><b class="text-sm">{{ b.consulta }}</b><div class="text-xs text-slate-400">{{ b.ciudad }} · {{ b.zona }}</div>{% if b.mensaje_error %}<div class="mt-1 rounded-lg bg-red-500/10 px-2 py-1 text-xs text-red-100">{{ b.mensaje_error }}</div>{% endif %}</td><td><span class="badge badge-blue">{{ b.get_estado_display }}</span></td><td><div class="h-2 w-24 rounded-full bg-slate-800"><div class="h-2 rounded-full bg-orange-500" style="width:{{ b.progreso }}%"></div></div></td><td>{{ b.resultados_encontrados }}</td><td>{{ b.prospectos_creados }}</td><td>{{ b.prospectos_actualizados }}</td><td>{{ b.duplicados_detectados }}</td><td>{{ b.solicitudes_reales }}</td><td><form method="post" action="{% url 'prospeccion:cancelar_busqueda' b.pk %}">{% csrf_token %}<button class="btn btn-danger">Cancelar</button></form></td></tr>{% empty %}<tr><td colspan="9" class="p-8"><div class="empty">Todavía no hay búsquedas. Iniciá una prospección para ver el historial.</div></td></tr>{% endfor %}</tbody></table></div>{% endblock %}
+{% extends 'prospeccion/base.html' %}
+{% block content %}
+<div class="arde-page-head">
+  <div>
+    <span class="eyebrow">◷ Auditoría comercial</span>
+    <h1 class="page-title">Historial de búsquedas</h1>
+    <p class="page-copy">Monitoreá cada corrida de Google Places con métricas operativas, requests, duplicados y errores sin tablas administrativas.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Nueva búsqueda</a>
+</div>
+
+<section class="search-timeline">
+  {% for b in busquedas %}
+    <article class="search-run-card">
+      <div class="search-run-head">
+        <div>
+          <span class="eyebrow">{{ b.get_estado_display }}</span>
+          <h2>{{ b.consulta }}</h2>
+          <p>{{ b.ciudad|default:'Ciudad sin definir' }} · {{ b.zona|default:'Zona amplia' }} · {{ b.get_modo_busqueda_display }}</p>
+        </div>
+        <div class="progress-orb" style="--progress:{{ b.progreso }}"><span>{{ b.progreso }}%</span></div>
+      </div>
+
+      <div class="run-progress"><span style="width:{{ b.progreso }}%"></span></div>
+
+      <div class="run-metrics">
+        <div><b>{{ b.resultados_encontrados }}</b><span>resultados</span></div>
+        <div><b>{{ b.prospectos_creados }}</b><span>creados</span></div>
+        <div><b>{{ b.prospectos_actualizados }}</b><span>actualizados</span></div>
+        <div><b>{{ b.duplicados_detectados }}</b><span>duplicados</span></div>
+        <div><b>{{ b.solicitudes_reales }}/{{ b.solicitudes_estimadas }}</b><span>requests</span></div>
+      </div>
+
+      {% if b.mensaje_error %}
+        <div class="run-error"><b>Error de API:</b> {{ b.mensaje_error }}</div>
+      {% endif %}
+
+      <div class="run-actions">
+        <a class="btn btn-primary" href="{% url 'prospeccion:explorador' %}?q={{ b.consulta|urlencode }}">Ver prospectos</a>
+        {% if b.estado == 'queued' or b.estado == 'running' %}
+          <form method="post" action="{% url 'prospeccion:cancelar_busqueda' b.pk %}">
+            {% csrf_token %}
+            <button class="btn btn-danger">Cancelar</button>
+          </form>
+        {% endif %}
+      </div>
+    </article>
+  {% empty %}
+    <div class="empty empty-premium">
+      <b>Todavía no hay búsquedas.</b>
+      <p>Creá una corrida de prospección para empezar a detectar negocios sin web y oportunidades calientes.</p>
+      <a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Iniciar prospección</a>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

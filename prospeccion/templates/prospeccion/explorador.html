@@ -1,1 +1,77 @@
-{% extends 'prospeccion/base.html' %}{% load prospeccion_ui %}{% block content %}<div class="arde-page-head"><div><span class="eyebrow">⌕ Mesa comercial premium</span><h1 class="page-title">Explorador de prospectos</h1><p class="page-copy">Trabajá cada oportunidad sin salir del radar: detalle, contacto, interés, bloqueo o descarte con trazabilidad.{% if q %} Búsqueda activa: <b class="text-orange-200">“{{ q }}”</b>{% endif %}</p></div><div class="flex gap-2"><a class="btn btn-secondary" href="{% url 'prospeccion:explorador' %}">Limpiar</a><a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Nueva búsqueda</a></div></div><div class="grid xl:grid-cols-[250px_minmax(0,1fr)_280px] gap-4"><aside class="surface surface-premium p-4 h-fit"><div class="section-title"><h2>Filtros</h2><span class="badge badge-slate">Radar</span></div><form class="space-y-2"><input type="hidden" name="q" value="{{ q }}"><label class="filter-toggle"><span>Sin web detectada</span><input type="checkbox" name="sin_web" value="1"></label><label class="filter-toggle"><span>Con teléfono</span><input type="checkbox" name="con_telefono" value="1"></label><label class="filter-toggle"><span>Alta prioridad</span><input type="checkbox" name="alta_prioridad" value="1"></label><label class="filter-toggle"><span>Duplicados posibles</span><input type="checkbox" name="duplicados" value="1"></label><select class="field" name="estado"><option value="">Estado comercial</option>{% for k,v in estados %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select><input class="field" name="rubro" placeholder="Rubro"><input class="field" name="zona" placeholder="Zona"><input class="field" name="puntaje" placeholder="Puntaje mínimo"><button class="btn btn-primary w-full">Aplicar filtros</button></form></aside><section class="surface p-0"><div class="section-title px-4 pt-4"><div><h2>Oportunidades detectadas</h2><p class="module-copy">Acciones siempre visibles, sin scroll horizontal ni columnas recortadas.</p></div><span class="badge badge-orange">{{ prospectos|length }} prospectos</span></div><div class="prospect-list">{% for p in prospectos %}<article class="prospect-card" tabindex="0"><div class="prospect-main"><div class="prospect-title"><b class="text-base">{{ p.nombre }}</b>{% if p.puntaje_total >= 75 %}<span class="badge badge-orange">Prioridad alta</span>{% endif %}<span class="badge badge-blue">{{ p.get_estado_comercial_display }}</span></div><div class="prospect-meta">{{ p.rubro|rubro_legible }} · {{ p.zona|default:p.ciudad }}</div><div class="mt-2 flex flex-wrap gap-1">{% if not p.tiene_web %}<span class="badge badge-red">Sin web</span>{% else %}<span class="badge badge-slate">Tiene web</span>{% endif %}{% if p.tiene_telefono %}<span class="badge badge-green">Teléfono disponible</span>{% else %}<span class="badge badge-slate">Sin teléfono</span>{% endif %}{% if p.es_posible_duplicado %}<span class="badge badge-yellow">Duplicado posible</span>{% endif %}</div><div class="prospect-signal-grid"><div class="signal"><span>Teléfono</span><b>{{ p.telefono_normalizado|default:'Sin teléfono' }}</b></div><div class="signal"><span>Zona</span><b>{{ p.zona|default:p.ciudad|default:'Sin zona' }}</b></div><div class="signal"><span>Web</span><b>{% if p.tiene_web %}Tiene web{% else %}Sin web{% endif %}</b></div><div class="signal"><span>Puntaje</span><b>{{ p.puntaje_total }} puntos</b></div></div></div><div class="prospect-actions"><a class="btn btn-primary primary-detail" href="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-get="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-target="#drawer" hx-swap="innerHTML">Ver detalle</a><div class="quick-actions"><form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'contacted' %}">{% csrf_token %}<button type="submit" class="action-pill">Marcar como contactado</button></form><form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'interested' %}">{% csrf_token %}<button type="submit" class="action-pill">Marcar como interesado</button></form><form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'do_not_contact' %}" onsubmit="return confirm('¿Marcar este prospecto como No contactar?');">{% csrf_token %}<button type="submit" class="action-pill danger">No contactar</button></form><form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'discarded' %}">{% csrf_token %}<button type="submit" class="action-pill">Descartar</button></form></div></div></article>{% empty %}<div class="empty"><b>No hay prospectos para esta búsqueda.</b><br>Probá limpiar filtros o iniciar una búsqueda nueva para ampliar el radar comercial.<div class="mt-3"><a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Crear búsqueda</a></div></div>{% endfor %}</div></section><aside class="surface commercial-radar p-4 h-fit"><div class="section-title"><h2>Radar comercial</h2><span class="badge badge-orange">{{ prospectos|length }}</span></div><div class="map-placeholder rounded-2xl"><span class="radar-label">Zonas calientes</span><span class="radar-dot radar-a"></span><span class="radar-dot radar-b"></span><span class="radar-dot radar-c"></span></div><p class="mt-3 text-xs text-slate-400">Vista preparada para georreferenciar prospectos. Priorizá por puntaje, teléfono y ausencia de web detectada.</p><div class="arde-divider"></div><div class="grid grid-cols-2 gap-2"><div class="mini-metric"><b>{{ prospectos|length }}</b><span>filtrados</span></div><div class="mini-metric"><b>ARDE</b><span>radar activo</span></div></div></aside></div><div id="drawer"></div>{% endblock %}
+{% extends 'prospeccion/base.html' %}
+{% load prospeccion_ui %}
+{% block content %}
+<div class="arde-page-head">
+  <div>
+    <span class="eyebrow">⌕ Mesa comercial premium</span>
+    <h1 class="page-title">Explorador de prospectos</h1>
+    <p class="page-copy">Trabajá cada oportunidad con acciones visibles, filtros persistentes y radar comercial en castellano.</p>
+  </div>
+  <div class="flex gap-2"><a class="btn btn-secondary" href="{% url 'prospeccion:explorador' %}">Limpiar filtros</a><a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Nueva búsqueda</a></div>
+</div>
+
+{% if filtros_activos %}
+  <div class="active-filter-bar">
+    <span>Segmento activo</span>
+    {% for filtro in filtros_activos %}<b>{{ filtro.etiqueta }}</b>{% endfor %}
+    <a href="{% url 'prospeccion:explorador' %}">Limpiar</a>
+  </div>
+{% endif %}
+
+<div class="explorer-grid">
+  <aside class="surface surface-premium filter-panel">
+    <div class="section-title"><h2>Filtros</h2><span class="badge badge-slate">Radar</span></div>
+    <form class="space-y-2">
+      <input type="hidden" name="q" value="{{ q }}">
+      <label class="filter-toggle"><span>Sin web detectada</span><input type="checkbox" name="sin_web" value="1" {% if filtros.sin_web %}checked{% endif %}></label>
+      <label class="filter-toggle"><span>Con teléfono</span><input type="checkbox" name="con_telefono" value="1" {% if filtros.con_telefono %}checked{% endif %}></label>
+      <label class="filter-toggle"><span>Alta prioridad</span><input type="checkbox" name="alta_prioridad" value="1" {% if filtros.alta_prioridad %}checked{% endif %}></label>
+      <label class="filter-toggle"><span>Duplicados posibles</span><input type="checkbox" name="duplicados" value="1" {% if filtros.duplicados %}checked{% endif %}></label>
+      <select class="field" name="estado"><option value="">Estado comercial</option>{% for k,v in estados %}<option value="{{ k }}" {% if filtros.estado == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+      <input class="field" name="rubro" placeholder="Rubro" value="{{ filtros.rubro|default:'' }}">
+      <input class="field" name="zona" placeholder="Zona" value="{{ filtros.zona|default:'' }}">
+      <input class="field" name="puntaje" placeholder="Puntaje mínimo" value="{{ filtros.puntaje|default:'' }}">
+      <button class="btn btn-primary w-full">Aplicar filtros</button>
+    </form>
+  </aside>
+
+  <section class="surface p-0">
+    <div class="section-title px-4 pt-4">
+      <div><h2>Oportunidades detectadas</h2><p class="module-copy">Acciones siempre visibles, sin scroll horizontal ni columnas recortadas.</p></div>
+      <span class="badge badge-orange">{{ prospectos|length }} prospectos</span>
+    </div>
+    <div class="prospect-list">
+      {% for p in prospectos %}
+        <article class="prospect-card" tabindex="0">
+          <div class="prospect-main">
+            <div class="prospect-title"><b class="text-base">{{ p.nombre }}</b>{% if p.puntaje_total >= 75 %}<span class="badge badge-orange">Prioridad alta</span>{% endif %}<span class="badge badge-blue">{{ p.get_estado_comercial_display }}</span></div>
+            <div class="prospect-meta">{{ p.rubro|rubro_legible }} · {{ p.zona|default:p.ciudad|default:'Zona sin definir' }}</div>
+            <div class="mt-2 flex flex-wrap gap-1">{% if not p.tiene_web %}<span class="badge badge-red">Sin web</span>{% else %}<span class="badge badge-slate">Tiene web</span>{% endif %}{% if p.tiene_telefono %}<span class="badge badge-green">Teléfono disponible</span>{% else %}<span class="badge badge-slate">Sin teléfono</span>{% endif %}{% if p.es_posible_duplicado %}<span class="badge badge-yellow">Duplicado posible</span>{% endif %}</div>
+            <div class="prospect-signal-grid"><div class="signal"><span>Teléfono</span><b>{{ p.telefono_normalizado|default:'Sin teléfono' }}</b></div><div class="signal"><span>Zona</span><b>{{ p.zona|default:p.ciudad|default:'Sin zona' }}</b></div><div class="signal"><span>Web</span><b>{% if p.tiene_web %}Tiene web{% else %}Sin web{% endif %}</b></div><div class="signal"><span>Puntaje</span><b>{{ p.puntaje_total }} puntos</b></div></div>
+          </div>
+          <div class="prospect-actions">
+            <a class="btn btn-primary primary-detail" href="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-get="{% url 'prospeccion:drawer_prospecto' p.pk %}" hx-target="#drawer" hx-swap="innerHTML">Ver detalle</a>
+            <div class="quick-actions">
+              <form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'contacted' %}">{% csrf_token %}<button type="submit" class="action-pill">Marcar como contactado</button></form>
+              <form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'interested' %}">{% csrf_token %}<button type="submit" class="action-pill">Marcar como interesado</button></form>
+              <form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'do_not_contact' %}" onsubmit="return confirm('¿Marcar este prospecto como No contactar?');">{% csrf_token %}<button type="submit" class="action-pill danger">No contactar</button></form>
+              <form method="post" action="{% url 'prospeccion:cambiar_estado' p.pk 'discarded' %}">{% csrf_token %}<button type="submit" class="action-pill">Descartar</button></form>
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div class="empty empty-premium"><b>No hay prospectos para este segmento.</b><p>Probá limpiar filtros o iniciar una búsqueda nueva para ampliar el radar comercial.</p><a class="btn btn-primary" href="{% url 'prospeccion:nueva_busqueda' %}">Crear búsqueda</a></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <aside class="surface commercial-radar filter-panel">
+    <div class="section-title"><h2>Radar comercial</h2><span class="badge badge-orange">{{ prospectos|length }}</span></div>
+    <div class="map-placeholder rounded-2xl"><span class="radar-label">Zonas calientes</span><span class="radar-dot radar-a"></span><span class="radar-dot radar-b"></span><span class="radar-dot radar-c"></span></div>
+    <p class="mt-3 text-xs text-slate-400">Vista preparada para georreferenciar prospectos. Priorizá por puntaje, teléfono y ausencia de web detectada.</p>
+    <div class="arde-divider"></div>
+    <div class="grid grid-cols-2 gap-2"><div class="mini-metric"><b>{{ prospectos|length }}</b><span>filtrados</span></div><div class="mini-metric"><b>ARDE</b><span>radar activo</span></div></div>
+  </aside>
+</div>
+<div id="drawer"></div>
+{% endblock %}
